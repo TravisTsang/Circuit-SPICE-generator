@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Trained or downloaded model weights (regenerate via training/)
+models/*.pt
+/yolov8*.pt
+/yolo11*.pt
+
+# Ultralytics run outputs
+runs/
+
+# Generated / ingested datasets (regenerate via training/synthetic and training/ingest)
+# Keep the folder skeleton, ignore all dataset content.
+datasets/**
+!datasets/**/
+
+# Pipeline outputs
+data/output/*
+
+# Keep directory placeholders everywhere
+!**/.gitkeep

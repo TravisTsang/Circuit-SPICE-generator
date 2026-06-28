@@ -1,0 +1,14 @@
+# Training-only dependencies.
+#
+# The core libraries (torch, torchvision, ultralytics, opencv, numpy, scikit-image)
+# are already pinned in the repo-root requirements.txt — install that first:
+#
+#     pip install -r requirements.txt
+#
+# The synthetic data generator (training/synthetic) needs only numpy + opencv,
+# both of which come from requirements.txt, so it runs before the heavy ML stack.
+#
+# Optional extras that improve training but are not required by the scaffold:
+albumentations>=1.4    # stronger image/mask augmentation (swap into unet/dataset.py)
+matplotlib>=3.8        # plotting metrics / visual sanity checks
+tensorboard>=2.16      # training curves

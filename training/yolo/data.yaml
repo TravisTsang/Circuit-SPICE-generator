@@ -1,0 +1,23 @@
+# YOLOv8 dataset config for schematic component detection.
+#
+# Class names MUST match the keys in statics_ocv/config.py SpiceConfig.class_to_prefix
+# so the detector output maps cleanly to SPICE prefixes. If you add a class here,
+# add it to class_to_prefix (and terminal_counts / default_values) as well.
+#
+# Paths are relative to this file's directory unless absolute.
+path: ../../datasets/component_detection
+train: images/train
+val: images/val
+
+names:
+  0: resistor
+  1: capacitor
+  2: inductor
+  3: diode
+  4: voltage_source
+  5: current_source
+  6: ground
+  7: switch
+  8: bjt
+  9: mosfet
+  10: opamp
