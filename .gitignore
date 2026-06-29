@@ -23,3 +23,6 @@ data/output/*
 
 # Keep directory placeholders everywhere
 !**/.gitkeep
+
+# Local session handoff notes
+/handoff.md

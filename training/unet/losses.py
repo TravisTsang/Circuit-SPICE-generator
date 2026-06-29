@@ -19,9 +19,12 @@ class DiceLoss(nn.Module):
         self.smooth = smooth
 
     def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        probs = torch.sigmoid(logits)
+        # .float() keeps the sigmoid and the large spatial sum in fp32 even under
+        # AMP autocast, where an fp16 reduction over ~590k pixels can lose
+        # precision or overflow. No effect when logits are already fp32.
+        probs = torch.sigmoid(logits.float())
         probs = probs.reshape(probs.shape[0], -1)
-        targets = targets.reshape(targets.shape[0], -1)
+        targets = targets.float().reshape(targets.shape[0], -1)
         intersection = (probs * targets).sum(dim=1)
         union = probs.sum(dim=1) + targets.sum(dim=1)
         dice = (2 * intersection + self.smooth) / (union + self.smooth)

@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from contextlib import nullcontext
 from pathlib import Path
 
 import torch
@@ -64,6 +65,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
                    help="Positive-class weight for BCE; raise if wires are missed.")
     p.add_argument("--no-torchscript", action="store_true",
                    help="Skip exporting a TorchScript copy alongside the checkpoint.")
+    p.add_argument("--amp", action="store_true",
+                   help="Enable CUDA automatic mixed precision (~half the VRAM, ~same quality). "
+                        "No-op on non-CUDA devices; weights stay fp32.")
+    p.add_argument("--amp-dtype", choices=["bf16", "fp16"], default="bf16",
+                   help="AMP compute dtype. bf16 (default; RTX 30/40-series and newer) needs no "
+                        "gradient scaler; fp16 enables one automatically.")
     return p
 
 
@@ -117,6 +124,18 @@ def main(argv: list[str] | None = None) -> int:
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
 
+    # Mixed precision: autocast the forward/loss, and (fp16 only) scale gradients
+    # to avoid underflow. bf16 has fp32's exponent range so it needs no scaler.
+    use_amp = args.amp and device == "cuda"
+    amp_dtype = torch.bfloat16 if args.amp_dtype == "bf16" else torch.float16
+    need_scaler = use_amp and amp_dtype is torch.float16
+    scaler = torch.amp.GradScaler("cuda", enabled=need_scaler)
+    amp_ctx = torch.autocast(device_type="cuda", dtype=amp_dtype) if use_amp else nullcontext()
+    if args.amp and not use_amp:
+        print(f"[train] --amp ignored: AMP needs CUDA but device={device}; training in fp32.")
+    elif use_amp:
+        print(f"[train] AMP on: dtype={args.amp_dtype}, grad-scaler={'on' if need_scaler else 'off'}")
+
     best_dice = -1.0
     for epoch in range(1, args.epochs + 1):
         model.train()
@@ -124,9 +143,11 @@ def main(argv: list[str] | None = None) -> int:
         for images, masks in train_loader:
             images, masks = images.to(device), masks.to(device)
             optimizer.zero_grad()
-            loss = criterion(model(images), masks)
-            loss.backward()
-            optimizer.step()
+            with amp_ctx:
+                loss = criterion(model(images), masks)
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
             running += loss.item()
         scheduler.step()
 
