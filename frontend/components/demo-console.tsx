@@ -219,7 +219,7 @@ export function DemoConsole({ compact = false }: { compact?: boolean }) {
         <div className="border-b border-line/70 p-4 sm:p-5 lg:border-b-0 lg:border-r">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-ink">Paste image to SPICE</h2>
+              <h2 className="text-lg font-semibold text-ink">Circuit to SPICE List</h2>
               <p className="mt-1 max-w-xl text-sm leading-6 text-muted">
                 Drop a schematic, paste from the clipboard, or choose a local image.
               </p>

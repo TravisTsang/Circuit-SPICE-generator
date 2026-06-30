@@ -151,7 +151,7 @@ export default function InformationPage() {
           <div>
             <h2 className="text-2xl font-semibold text-ink">High-level overview</h2>
             <p className="mt-1 text-sm text-muted">
-              The program uses three models: two project-specific trained models
+              The program uses three machine learning models: two project-specific trained models
               and one pre-trained OCR model.
             </p>
           </div>
