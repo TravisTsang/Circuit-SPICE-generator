@@ -1,4 +1,4 @@
-# Circuits OCR
+# Circuit SPICE List Generator
 
 End-to-end schematic OCR pipeline for converting noisy, low-quality, or hand-drawn electrical schematic images into SPICE netlists.
 
@@ -13,10 +13,103 @@ The application is organized as a multi-stage machine-learning and graph-reconst
 
 The current repository contains the inference application. You still need to train or provide the U-Net and YOLOv8 weights before running real images.
 
+## Circuit SPICE List Generator Website
+
+The `frontend/` folder is now a Next.js App Router, TypeScript, and Tailwind CSS site for the Circuit SPICE List Generator project.
+
+Pages:
+
+- `/` - Home with an immediate image-to-SPICE demo surface.
+- `/information` - Pipeline, runtime, model, and deployment details.
+- `/statistics` - Current project facts and API output schema.
+- `/demo` - Full paste/upload demo for SPICE netlist generation.
+
+API routes:
+
+- `GET /api/health` - Checks whether the external FastAPI backend is configured and reachable.
+- `POST /api/process` - Validates an uploaded image and proxies it to the Python backend.
+- `GET /api/output` - Describes the public app pages, API contract, and expected output shape.
+
+The Next app does not include a database and does not persist uploads or inference results. Supabase is not needed unless you later decide to store user sessions, examples, saved outputs, or analytics.
+
+### Local Website Development
+
+Install the Python backend dependencies and run FastAPI in one terminal:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn backend.server:app --host 127.0.0.1 --port 8000 --reload
+```
+
+In a second terminal, run the Next app:
+
+```powershell
+cd frontend
+copy .env.example .env.local
+npm install
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+For real inference, provide trained model weights and keep this value in `frontend/.env.local`:
+
+```text
+BOT_OR_NOT_BACKEND_URL=http://127.0.0.1:8000
+```
+
+If the backend URL is missing, the site still builds and runs. The demo shows a clear backend-not-configured error when inference is requested.
+
+### Vercel Deployment
+
+Deploy only the Next.js frontend to Vercel.
+
+Recommended Vercel settings:
+
+- Root Directory: `frontend`
+- Framework Preset: Next.js
+- Build Command: `npm run build`
+- Install Command: `npm install`
+
+Set these Vercel environment variables:
+
+```text
+NEXT_PUBLIC_SITE_URL=https://your-vercel-domain.vercel.app
+BOT_OR_NOT_BACKEND_URL=https://your-fastapi-backend.example.com
+```
+
+`NEXT_PUBLIC_SITE_URL` is used for SEO metadata and Open Graph links. `BOT_OR_NOT_BACKEND_URL` is server-only and should point to a separately running FastAPI inference service.
+
+Do not deploy the PyTorch, YOLOv8, EasyOCR, and model-weight inference pipeline as a Vercel serverless function. It is too heavy for a reliable Vercel function and needs model files on disk plus a Python runtime that can load and cache the models. Use a separate Python host or run the backend locally for demos.
+
+Set these on the Python backend host, not in the Vercel frontend, when using real model files:
+
+```text
+HAND_DRAWN_UNET_WEIGHTS=/absolute/path/to/hand_drawn_unet_trace_segmentation.pt
+HAND_DRAWN_YOLO_WEIGHTS=/absolute/path/to/hand_drawn_yolov8_components.pt
+DIGITAL_UNET_WEIGHTS=/absolute/path/to/digital_unet_trace_segmentation.pt
+DIGITAL_YOLO_WEIGHTS=/absolute/path/to/digital_yolov8_components.pt
+MODEL_DEVICE=cpu
+```
+
+Before launch:
+
+1. Confirm `https://your-fastapi-backend.example.com/api/health` responds.
+2. Confirm the backend has the four model weight files or intentional environment overrides.
+3. Set `BOT_OR_NOT_BACKEND_URL` in Vercel without a trailing `/api`.
+4. Deploy the `frontend` project.
+5. Test `/api/health`, `/api/output`, and `/demo` on the Vercel URL.
+
 ## Directory Structure
 
 ```text
-Circuits OCR/
+Circuit SPICE List Generator/
   README.md
   requirements.txt
 
@@ -71,18 +164,19 @@ Use `--dump-intermediates` while developing. It saves the trace probability map,
 
 ## Web Application
 
-The repo also includes a React + FastAPI web prototype:
+The repo also includes a Next.js + FastAPI web application:
 
 ```text
 backend/
   server.py                  # FastAPI upload/inference API
 
 frontend/
-  package.json               # Vite React app
-  src/App.jsx                # Paste/drop UI and result panels
-  src/main.jsx
-  src/index.css
-  tailwind.config.js
+  app/                       # Next.js App Router pages and API routes
+  components/                # Navigation, background, and demo console
+  lib/                       # Shared typed content and constants
+  app/opengraph-image.tsx    # Code-native Open Graph placeholder image
+  package.json
+  tailwind.config.ts
 ```
 
 ### Web Model Weights
@@ -135,17 +229,17 @@ npm run dev
 Then open:
 
 ```text
-http://127.0.0.1:5173
+http://localhost:3000
 ```
 
-The UI supports global image paste, drag-and-drop upload, a domain selector for Hand-Drawn Circuits vs. Digital Circuits, and a Process Circuit action. The frontend sends a `FormData` request containing:
+The UI supports global image paste, drag-and-drop upload, a domain selector for Hand-Drawn Circuits vs. Digital Circuits, and a Process action. The Next.js API route sends a `FormData` request to the FastAPI backend containing:
 
 ```text
 image=<uploaded image>
 domain=hand-drawn | digital
 ```
 
-The backend returns component boxes, OCR spans, recovered nets, warnings, timing, the active weight paths, and generated SPICE netlist text.
+The backend returns component boxes, OCR spans, recovered nets, warnings, timing, the active weight paths, and generated SPICE netlist text. The Next.js route validates file type, size, and domain before proxying the upload.
 
 ## How The Code Works
 
