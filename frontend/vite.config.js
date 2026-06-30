@@ -7,6 +7,7 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   root: rootDir,
+  base: process.env.VITE_BASE_PATH ?? "/",
   plugins: [react()],
   cacheDir: path.join(rootDir, "node_modules", ".vite"),
   server: {

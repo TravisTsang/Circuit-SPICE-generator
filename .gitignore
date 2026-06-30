@@ -21,6 +21,10 @@ datasets/**
 # Pipeline outputs
 data/output/*
 
+# Frontend local artifacts
+frontend/dist/
+frontend/node_modules/
+
 # Keep directory placeholders everywhere
 !**/.gitkeep
 
